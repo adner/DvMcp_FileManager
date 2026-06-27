@@ -152,7 +152,7 @@ export DATAVERSE_TABLE_NAME="cr19f_fileitem"
 ```bash
 dotnet build src/DataverseFileManager/DataverseFileManager.csproj
 dotnet build samples/DataverseFileManager.ConsoleDemo/DataverseFileManager.ConsoleDemo.csproj
-# The Explorer host is x64/ARM64 only:
+# The Explorer host is x64/ARM64 only (compile check — the run flow below publishes via the setup script):
 dotnet build src/DataverseFileManager.Explorer/DataverseFileManager.Explorer.csproj -p:Platform=x64
 ```
 
@@ -170,8 +170,10 @@ dotnet run --project samples/DataverseFileManager.ConsoleDemo -- tree /
 ## Run the Explorer integration (Windows)
 
 The Explorer host needs **package identity** (cfapi and sync-root registration are blocked for
-unpackaged processes). A sparse package supplies that. From an **elevated** PowerShell (first run only —
-it trusts a self-signed dev cert):
+unpackaged processes). A sparse package supplies that. The setup script does everything in one shot —
+it runs `dotnet publish` (to `bin\publish`), then packs, signs, and registers the sparse package against
+that published exe — so there's **no separate `dotnet publish` step**. From an **elevated** PowerShell
+(first run only — it trusts a self-signed dev cert):
 
 ```powershell
 # build, sign, and register the sparse package + the host

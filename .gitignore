@@ -39,10 +39,11 @@ appsettings.json
 *.cer
 *.snk
 
-# --- Visual Studio / Rider / editor noise ---
+# --- Visual Studio / Rider / editor / agent tooling noise ---
 .vs/
 .vscode/
 .idea/
+.codex/
 *.user
 *.suo
 *.userosscache

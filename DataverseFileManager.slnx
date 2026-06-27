@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/samples/">
+    <Project Path="samples/DataverseFileManager.ConsoleDemo/DataverseFileManager.ConsoleDemo.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/DataverseFileManager.Explorer/DataverseFileManager.Explorer.csproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="src/DataverseFileManager/DataverseFileManager.csproj" />
+  </Folder>
+</Solution>

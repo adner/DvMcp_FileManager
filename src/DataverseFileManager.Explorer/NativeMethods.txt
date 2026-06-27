@@ -1,0 +1,52 @@
+// Cloud Filter API (cfapi.h) surface for the Dataverse sync engine.
+// CsWin32 pulls in dependent structs/enums automatically, but the callback-table and
+// operation structs are listed explicitly because they are reached via function pointers,
+// not direct call arguments.
+
+// --- Connection lifecycle ---
+CfConnectSyncRoot
+CfDisconnectSyncRoot
+
+// --- Placeholder creation / update (lazy folder population) ---
+CfCreatePlaceholders
+CfUpdatePlaceholder
+CfSetInSyncState
+
+// --- Hydration: respond to FETCH_DATA by transferring bytes back ---
+CfExecute
+CfGetTransferKey
+CfReleaseTransferKey
+
+// --- Callback table + dispatch structures ---
+CF_CALLBACK_REGISTRATION
+CF_CALLBACK_INFO
+CF_CALLBACK_PARAMETERS
+CF_CALLBACK_TYPE
+CF_CONNECT_FLAGS
+
+// --- Operation structures (used with CfExecute) ---
+CF_OPERATION_INFO
+CF_OPERATION_PARAMETERS
+CF_OPERATION_TYPE
+
+// --- Placeholder description ---
+CF_PLACEHOLDER_CREATE_INFO
+CF_PLACEHOLDER_CREATE_FLAGS
+CF_FS_METADATA
+CF_FILE_RANGE
+
+// --- Write-back: convert a new local file/folder into a managed placeholder ---
+CfConvertToPlaceholder
+CF_CONVERT_FLAGS
+CF_IN_SYNC_STATE
+CF_SET_IN_SYNC_FLAGS
+
+// --- In-place edits: detect a dirtied placeholder, then re-mark it in sync ---
+CfGetPlaceholderInfo
+CF_PLACEHOLDER_INFO_CLASS
+CF_PLACEHOLDER_STANDARD_INFO
+
+// --- Keys / flags reached only through callback + operation structs ---
+CF_CONNECTION_KEY
+CF_CREATE_FLAGS
+FILE_BASIC_INFO

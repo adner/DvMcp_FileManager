@@ -1,0 +1,62 @@
+# ---------------------------------------------------------------------------
+# .gitignore for the Dataverse MCP File Manager (.NET 10 solution)
+#   - class library + console demo + Windows cfapi Explorer host
+#   - sparse-package build (PowerShell) under src/DataverseFileManager.Explorer/Package/
+# ---------------------------------------------------------------------------
+
+# --- .NET build output ---
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+TestResults/
+[Tt]est[Rr]esults/
+
+# CsWin32 generated sources emitted for inspection (CompilerGeneratedFilesOutputPath)
+**/obj/generated/
+
+# --- Sparse-package build outputs (src/DataverseFileManager.Explorer/Package/) ---
+# Keep AppxManifest.xml + setup-sparse-package.ps1 (the source); ignore everything built.
+**/Package/stage/
+*.msix
+*.msixbundle
+*.appx
+*.appxbundle
+*.appxsym
+*.appxupload
+
+# --- Local connection config (real per-deployment values) ---
+# Keep appsettings.example.json (the template); ignore the filled-in copy.
+appsettings.json
+**/appsettings.json
+
+# --- Signing material (never commit certs/keys) ---
+*.pfx
+*.cer
+*.snk
+
+# --- Visual Studio / Rider / editor noise ---
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.DotSettings.user
+
+# --- NuGet ---
+*.nupkg
+packages/
+.nuget/
+
+# --- OS / misc ---
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+*.log

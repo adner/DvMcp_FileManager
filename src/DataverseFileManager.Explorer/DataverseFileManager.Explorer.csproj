@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- Windows SDK TFM brings in the Windows.* WinRT projections (Windows.Storage.Provider)
+         automatically; 19041 (2004) is the floor that exposes the sync-root registration surface. -->
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- cfapi P/Invoke (CsWin32) emits unsafe pointer code and uses function-pointer callbacks. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Platforms>x64;ARM64</Platforms>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DataverseFileManager\DataverseFileManager.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Source generator: emits accurate P/Invoke for the cfapi funcs listed in NativeMethods.txt.
+         No runtime dependency, so PrivateAssets=all. -->
+    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.298">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Branded nav-pane icon (StorageProviderSyncRootInfo.IconResource points at this on disk). -->
+    <None Update="Assets\dvicon.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Connection config: appsettings.json is git-ignored (real values); the example is the template. -->
+    <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" Condition="Exists('appsettings.json')" />
+    <None Update="appsettings.example.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

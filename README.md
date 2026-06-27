@@ -21,7 +21,7 @@ A C# / .NET 10 solution in two layers:
   loop) using the official [`ModelContextProtocol`](https://www.nuget.org/packages/ModelContextProtocol)
   SDK, and moves file bytes directly over the SAS URLs that the MCP server brokers.
 - **`DataverseFileManager.Explorer`** — a **Windows-only** host that registers a sync root with the
-  shell and implements the [Cloud Filter API](https://learn.microsoft.com/windows/win32/cfapi/cloud-filter-api-portal)
+  shell and implements the [Cloud Filter API](https://learn.microsoft.com/windows/win32/cfapi/cloud-files-api-portal)
   (cfapi) callbacks, so the Dataverse-backed files appear under a branded **"Dataverse"** node in
   Explorer with on-demand hydration and local write-back.
 

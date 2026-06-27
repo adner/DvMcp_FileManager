@@ -28,6 +28,17 @@ A C# / .NET 10 solution in two layers:
 > **Status:** the library and read/write Explorer integration are functional against a live org. See
 > [`spec.md`](spec.md) for the detailed, phased design record and current milestone status.
 
+> ⚠️ **Cost & licensing — Copilot Credits.** Since **December 15, 2025**, Microsoft meters Dataverse
+> MCP tool calls made from outside Microsoft Copilot Studio — which is exactly how this project uses the
+> server. Every operation here turns into one or more billable tool calls (`read_query`, `create_record`,
+> `init_file_upload`, …), and browsing/syncing folders generates many of them, so **Copilot Credit spend
+> can add up quickly**. You are **not** charged for accessing Dynamics 365 data if the signed-in user has
+> a qualifying license — a **Dynamics 365 Premium** license (Sales, Finance, Supply Chain, or Customer
+> Service Premium) or a **Microsoft 365 Copilot** User Subscription License (USL). Without one, expect
+> pay-as-you-go credit consumption. Review the licensing/billing details in
+> [Connect to Dataverse with MCP](https://learn.microsoft.com/en-us/power-apps/maker/data-platform/data-platform-mcp)
+> before running this. This is an unofficial experiment, not a Microsoft product — understand the costs first.
+
 ## How it works
 
 ```

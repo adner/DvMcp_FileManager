@@ -46,8 +46,9 @@ internal static class CloudProvider
     private static FileSystemWatcher? _watcher;
 
     // Paths currently being processed (or just placeholder-converted by us) — suppresses the
-    // watcher reacting to its own writes and to placeholder churn from FETCH callbacks.
-    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> _inFlight =
+    // watcher reacting to its own writes and to placeholder churn from FETCH callbacks. The value is
+    // the running worker's completion task, so a rename can await the old name's pending create.
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, Task> _inFlight =
         new(StringComparer.OrdinalIgnoreCase);
 
     public static unsafe void Connect(string syncRootPath, IDataverseFileSystem fs)
@@ -422,7 +423,7 @@ internal static class CloudProvider
                          | NotifyFilters.LastWrite | NotifyFilters.Size,
         };
         _watcher.Created += (_, e) => Dispatch(e.FullPath, ProcessLocalAsync);
-        _watcher.Renamed += (_, e) => Dispatch(e.FullPath, ProcessLocalAsync);
+        _watcher.Renamed += (_, e) => DispatchRename(e.OldFullPath, e.FullPath);
         _watcher.Changed += (_, e) => Dispatch(e.FullPath, ProcessModifiedAsync);
         _watcher.Error += (_, e) => Log.Error("FileSystemWatcher error", e.GetException());
         _watcher.EnableRaisingEvents = true;
@@ -437,13 +438,40 @@ internal static class CloudProvider
     /// </summary>
     private static void Dispatch(string fullPath, Func<string, Task> worker)
     {
-        if (!_inFlight.TryAdd(fullPath, 0)) return;
+        var done = new TaskCompletionSource();
+        if (!_inFlight.TryAdd(fullPath, done.Task)) return;
         _ = Task.Run(async () =>
         {
             try { await worker(fullPath); }
             catch (Exception ex) { Log.Error($"write-back failed for '{fullPath}'", ex); }
-            finally { _inFlight.TryRemove(fullPath, out _); }
+            finally { _inFlight.TryRemove(fullPath, out _); done.SetResult(); }
         });
+    }
+
+    /// <summary>
+    /// Dispatches a local rename. Keyed (and deduped) on the <b>new</b> path like <see cref="Dispatch"/>,
+    /// but carries the old path through so the cloud side does a move of the existing record rather than
+    /// creating a second one.
+    /// </summary>
+    private static void DispatchRename(string oldFull, string newFull)
+    {
+        var done = new TaskCompletionSource();
+        if (!_inFlight.TryAdd(newFull, done.Task)) return;
+        _ = Task.Run(async () =>
+        {
+            try { await ProcessRenamedAsync(oldFull, newFull); }
+            catch (Exception ex) { Log.Error($"rename write-back failed for '{oldFull}' → '{newFull}'", ex); }
+            finally { _inFlight.TryRemove(newFull, out _); done.SetResult(); }
+        });
+    }
+
+    /// <summary>Awaits any worker still running for <paramref name="fullPath"/> (its errors are its own).</summary>
+    private static async Task WaitForInFlightAsync(string fullPath)
+    {
+        if (_inFlight.TryGetValue(fullPath, out var task))
+        {
+            try { await task; } catch { /* the worker logs its own failures */ }
+        }
     }
 
     private static async Task ProcessLocalAsync(string fullPath)
@@ -478,6 +506,54 @@ internal static class CloudProvider
         await _fs.UploadAsync(fullPath, virtualPath);
         Log.Info($"  uploaded '{virtualPath}' to Dataverse");
         ConvertFileToPlaceholder(fullPath, virtualPath);
+    }
+
+    /// <summary>
+    /// Handles a local <c>Renamed</c> event by <b>moving</b> the existing record, not creating a new one.
+    /// Windows creates a folder as "New Folder" then immediately renames it, so the Created handler's
+    /// insert for the old name may still be in flight — we await it first so the record exists to move.
+    /// </summary>
+    private static async Task ProcessRenamedAsync(string oldFull, string newFull)
+    {
+        FileAttributes attr;
+        try { attr = File.GetAttributes(newFull); }
+        catch (FileNotFoundException) { return; }
+        catch (DirectoryNotFoundException) { return; }
+
+        // Managed placeholders (files) are renamed cloud-side by the cfapi NOTIFY_RENAME callback — skip.
+        if (attr.HasFlag(FileAttributes.ReparsePoint)) return;
+
+        string oldVirtual = ToVirtualPath(oldFull);
+        string newVirtual = ToVirtualPath(newFull);
+        if (oldVirtual == newVirtual) return;
+
+        // Let the pending create for the old name finish so there is a record to move.
+        await WaitForInFlightAsync(oldFull);
+
+        try
+        {
+            if (await _fs.GetItemAsync(oldVirtual) is not null)
+            {
+                await _fs.MoveAsync(oldVirtual, newVirtual);
+                Log.Info($"RENAMED (local): '{oldVirtual}' → '{newVirtual}' in Dataverse");
+            }
+            else if (await _fs.GetItemAsync(newVirtual) is null)
+            {
+                // Neither the old nor new path exists yet → treat it as a brand-new item.
+                Log.Info($"RENAMED (local): no record at '{oldVirtual}'; creating '{newVirtual}'");
+                await ProcessLocalAsync(newFull);
+            }
+            // else: already at the new path (cfapi NOTIFY_RENAME or a prior pass moved it) → no-op
+        }
+        catch (FileNotFoundException)
+        {
+            // Source moved out from under us (a concurrent rename) — desired end state already holds.
+            Log.Info($"  '{oldVirtual}' already moved; local rename is a no-op");
+        }
+        catch (IOException ex)
+        {
+            Log.Warn($"rename '{oldVirtual}' → '{newVirtual}': {ex.Message}");
+        }
     }
 
     /// <summary>
